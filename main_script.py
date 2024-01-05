@@ -1,6 +1,6 @@
 
 import os
-import telebot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import openai
 from apscheduler.schedulers.blocking import BlockingScheduler
 
