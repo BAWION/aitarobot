@@ -1,6 +1,6 @@
-
 import os
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Bot
 import openai
 from apscheduler.schedulers.blocking import BlockingScheduler
 
@@ -13,9 +13,11 @@ CHANNEL_NAME = os.getenv('CHANNEL_NAME')
 if not all([TELEGRAM_TOKEN, OPENAI_TOKEN, CHANNEL_NAME]):
     raise ValueError("Отсутствуют необходимые переменные среды: TELEGRAM_TOKEN, OPENAI_TOKEN, CHANNEL_NAME")
 
-# Инициализация бота и OpenAI
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+# Инициализация OpenAI
 openai.api_key = OPENAI_TOKEN
+
+# Инициализация бота Telegram
+bot = Bot(TELEGRAM_TOKEN)
 
 def generate_content():
     """
@@ -32,22 +34,25 @@ def generate_content():
         print(f"Ошибка при генерации контента: {e}")
         return None
 
-def publish_post():
+def publish_post(context):
     """
     Публикует сгенерированный контент в Telegram канале.
     """
     content = generate_content()
     if content:
         try:
-            bot.send_message(CHANNEL_NAME, content)
+            context.bot.send_message(chat_id=CHANNEL_NAME, text=content)
         except Exception as e:
             print(f"Ошибка при публикации поста: {e}")
     else:
         print("Не удалось сгенерировать контент.")
 
+# Создание экземпляра Updater
+updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
+
 # Настройка планировщика для автоматической публикации постов
 scheduler = BlockingScheduler()
-scheduler.add_job(publish_post, 'cron', hour='9,15,21')  # Настройка на 9:00, 15:00 и 21:00
+scheduler.add_job(publish_post, 'cron', hour='9,15,21', args=(updater.job_queue,))  # Настройка на 9:00, 15:00 и 21:00
 
 # Запуск планировщика
 scheduler.start()
