@@ -28,17 +28,21 @@ def generate_content():
     Генерирует контент, используя модель GPT-3 от OpenAI.
     Создает текст, разбитый на абзацы, каждый из которых имеет ограничение по длине.
     """
-    prompt_text = "Напишите интересный абзац об астрологии и таро."
+    prompt_text = "Напишите краткий, но полный абзац об астрологии и таро. Закончите абзац полным предложением."
     full_text = ""
     try:
         for _ in range(3):  # Генерация трех абзацев
             response = openai.Completion.create(
                 model="text-davinci-003",
                 prompt=prompt_text,
-                max_tokens=130  # Ограничение для каждого абзаца
+                max_tokens=250  # Увеличенное ограничение для каждого абзаца
             )
             paragraph = response.choices[0].text.strip()
-            full_text += paragraph + "\n\n"  # Добавление абзаца к полному тексту
+            # Обрезать абзац до последней полной точки
+            last_period = paragraph.rfind(".")
+            if last_period != -1:
+                paragraph = paragraph[:last_period + 1]
+            full_text += paragraph + "\n\n"
         return full_text.strip()
     except Exception as e:
         logging.error(f"Ошибка при генерации контента: {e}")
