@@ -26,23 +26,20 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def generate_content():
     """
     Генерирует контент, используя модель GPT-3 от OpenAI.
-    Стремится сформировать текст длиной в 400 токенов, заканчивающийся точкой.
+    Создает текст, разбитый на абзацы, каждый из которых имеет ограничение по длине.
     """
-    prompt_text = "Напишите интересный и законченный пост об астрологии и таро. Текст должен быть законченным и содержать около 400 слов."
-    
+    prompt_text = "Напишите интересный абзац об астрологии и таро."
+    full_text = ""
     try:
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt_text,
-            max_tokens=400,
-            stop=["."]  # Указывает модели остановиться после точки
-        )
-        generated_text = response.choices[0].text.strip()
-        # Обрезаем текст до последней точки, если он слишком длинный
-        if len(generated_text) > 400:
-            last_period = generated_text.rfind(".")
-            generated_text = generated_text[:last_period + 1]
-        return generated_text
+        for _ in range(3):  # Генерация трех абзацев
+            response = openai.Completion.create(
+                model="text-davinci-003",
+                prompt=prompt_text,
+                max_tokens=130  # Ограничение для каждого абзаца
+            )
+            paragraph = response.choices[0].text.strip()
+            full_text += paragraph + "\n\n"  # Добавление абзаца к полному тексту
+        return full_text.strip()
     except Exception as e:
         logging.error(f"Ошибка при генерации контента: {e}")
         return None
