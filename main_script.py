@@ -26,12 +26,16 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 def generate_content():
     """
     Генерирует контент, используя модель GPT-3 от OpenAI.
+    Запрос формируется таким образом, чтобы текст заканчивался полным предложением.
     """
+    prompt_text = "Напишите интересный и законченный пост об астрологии и таро. Текст должен быть законченным и содержать не более 450 слов."
+    
     try:
         response = openai.Completion.create(
             model="text-davinci-003",
-            prompt="Напишите интересный пост об астрологии и таро.",
-            max_tokens=450  # Увеличено количество токенов
+            prompt=prompt_text,
+            max_tokens=450,
+            stop=["."]  # Указывает модели остановиться после точки
         )
         return response.choices[0].text.strip()
     except Exception as e:
