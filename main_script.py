@@ -67,7 +67,7 @@ def generate_content():
         response = openai.Completion.create(
             model="text-davinci-003",
             prompt=prompt_text,
-            max_tokens=250  # Увеличенное ограничение для каждого абзаца
+            max_tokens=450  # Увеличенное ограничение для каждого абзаца
         )
         paragraph = response.choices[0].text.strip()
         full_text += paragraph
