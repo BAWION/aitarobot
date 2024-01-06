@@ -1,6 +1,6 @@
 import os
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
-from telegram import Bot
+from telegram import Bot, Update
+from telegram.ext import Updater, CommandHandler, CallbackContext
 import openai
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -19,7 +19,7 @@ updater = Updater(TELEGRAM_TOKEN, use_context=True)
 # Логирование
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Функции для генерации контента  
+# Функции для генерации контента
 def generate_content():
     """
     Генерирует контент, используя модель GPT-3 от OpenAI.
@@ -35,9 +35,6 @@ def generate_content():
         logging.error(f"Ошибка при генерации контента: {e}")
         return None
 
-def generate_test_content():
-    return "Тестовый пост"
-
 # Функция публикации
 def publish_post(context: CallbackContext):
     msg = generate_content()
@@ -45,6 +42,11 @@ def publish_post(context: CallbackContext):
         context.bot.send_message(chat_id=CHANNEL_NAME, text=msg)
     else:
         logging.info("Сообщение не было отправлено, так как контент пуст.")
+
+# Обработчик команды для запроса новой публикации
+def request_post(update: Update, context: CallbackContext):
+    publish_post(context)
+    update.message.reply_text("Новый пост был опубликован.")
 
 # Планировщик
 scheduler = BlockingScheduler(timezone=pytz.utc)
@@ -54,7 +56,9 @@ scheduler.add_job(
     args=[updater.job_queue]
 )
 
-# Тестирование
+# Регистрация обработчиков
+updater.dispatcher.add_handler(CommandHandler("newpost", request_post))
+
 if __name__ == '__main__':
     updater.start_polling()
     updater.idle()
