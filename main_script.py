@@ -3,6 +3,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 from telegram import Bot
 import openai
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
 import pytz
 import logging
 
@@ -20,13 +21,14 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Функции для генерации контента  
 def generate_content():
-    # код генерации контента
-    # Пример:
+    """
+    Генерирует контент, используя модель GPT-3 от OpenAI.
+    """
     try:
         response = openai.Completion.create(
             model="text-davinci-003",
             prompt="Напишите интересный пост об астрологии и таро.",
-            max_tokens=150
+            max_tokens=300  # Увеличено количество токенов
         )
         return response.choices[0].text.strip()
     except Exception as e:
@@ -46,14 +48,16 @@ def publish_post(context: CallbackContext):
 
 # Планировщик
 scheduler = BlockingScheduler(timezone=pytz.utc)
-scheduler.add_job(publish_post, 'interval', seconds=5, args=[updater.job_queue])
+scheduler.add_job(
+    publish_post, 
+    CronTrigger(hour="9,15,21"),  # Запуск в 9:00, 15:00 и 21:00 по UTC
+    args=[updater.job_queue]
+)
 
 # Тестирование
 if __name__ == '__main__':
-    updater.job_queue.run_repeating(publish_post, interval=5, first=0)
-
     updater.start_polling()
     updater.idle()
 
-    # Запуск планировщика (если нужно)
-    # scheduler.start()
+    # Запуск планировщика
+    scheduler.start()
