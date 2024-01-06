@@ -4,63 +4,43 @@ from telegram import Bot
 import openai
 from apscheduler.schedulers.blocking import BlockingScheduler
 import pytz
+import logging
 
-# Загрузка токенов API и имени канала из переменных среды
-TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-OPENAI_TOKEN = os.getenv('OPENAI_TOKEN')
-CHANNEL_NAME = os.getenv('CHANNEL_NAME')
+# Константы и инициализация
 
-# Проверка наличия всех необходимых данных
-if not all([TELEGRAM_TOKEN, OPENAI_TOKEN, CHANNEL_NAME]):
-    raise ValueError("Отсутствуют необходимые переменные среды: TELEGRAM_TOKEN, OPENAI_TOKEN, CHANNEL_NAME")
+TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
+OPENAI_TOKEN = os.environ['OPENAI_TOKEN'] 
+CHANNEL_NAME = os.environ['CHANNEL_NAME']
 
-# Инициализация OpenAI
 openai.api_key = OPENAI_TOKEN
 
-# Инициализация бота Telegram
 bot = Bot(TELEGRAM_TOKEN)
+updater = Updater(TELEGRAM_TOKEN, use_context=True)
+
+# Логирование
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+# Функции для генерации контента
 
 def generate_content():
-    """
-    Генерирует контент, используя модель GPT-3 от OpenAI.
-    """
+  # код генерации контента  
 
-    try:
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt="Напишите интересный пост об астрологии и таро.",
-            max_tokens=150
-        )
-        return response.choices[0].text.strip()
-    except Exception as e:
-        print(f"Ошибка при генерации контента: {e}")
-        return None
+def generate_test_content():
+  return "Тестовый пост"
 
+# Функция публикации
 def publish_post(context):
-    """
-    Публикует сгенерированный контент в Telegram канале.
-    """
+  msg = context.job.context[0]  
+  context.bot.send_message(chat_id=CHANNEL_NAME, text=msg)
 
-    content = generate_content()
-    if content:
-        try:
-            context.bot.send_message(chat_id=CHANNEL_NAME, text=content)
-        except Exception as e:
-            print(f"Ошибка при публикации поста: {e}")
-    else:
-        print("Не удалось сгенерировать контент.")
-
-# Создание экземпляра Updater
-updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
-
-# Настройка планировщика для автоматической публикации постов
+# Планировщик
 scheduler = BlockingScheduler()
-scheduler.add_job(publish_post, 'cron', hour='9,15,21', args=(updater.job_queue,), timezone=pytz.utc)
+scheduler.add_job(publish_post, 'interval', seconds=5, args=[generate_content()])
 
-# Запуск планировщика
-scheduler.start()
-
-# Тестовая генерация контента и публикация
-content = generate_content()
-if content:
-    bot.send_message(chat_id=CHANNEL_NAME, text=content)
+# Тестирование
+if __name__ == '__main__':
+  test_msg = generate_test_content()
+  context = updater.job_queue
+  publish_post(context, test_msg)
+  
+  scheduler.start()
